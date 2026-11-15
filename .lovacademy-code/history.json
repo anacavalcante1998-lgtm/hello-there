@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-11-15T20:42:11.745Z",
+  "updated_at": "2026-11-15T20:44:54.127Z",
   "messages": [
     {
       "role": "user",
@@ -47,6 +47,10 @@
     {
       "role": "assistant",
       "text": "Etapa 4/6 concluída: Autenticação e gerenciamento administrativo. Arquivos publicados: src/lib/auth.ts, src/routes/login.tsx, src/routes/admin.tsx, src/components/admin/admin-shell.tsx, src/routes/admin/index.tsx, src/routes/admin/categories.tsx, src/components/admin/book-form.tsx, src/routes/admin/books.tsx."
+    },
+    {
+      "role": "assistant",
+      "text": "Etapa 5/6 concluída: Importação em massa. Arquivos publicados: src/routes/admin/import.tsx, src/components/admin/admin-shell.tsx."
     }
   ]
 }
