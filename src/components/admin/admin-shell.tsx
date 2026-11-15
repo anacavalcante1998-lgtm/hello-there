@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { BookOpen, LayoutDashboard, LogOut, Tags } from "lucide-react";
+import { BookOpen, LayoutDashboard, LogOut, Tags, Upload } from "lucide-react";
 import { getLibraryIdentity, signOut, type LibraryIdentity } from "../../lib/auth";
 
 export function AdminShell({ children }: { children: ReactNode }) {
@@ -57,6 +57,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <a href="/admin" className="inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-[#633848] hover:bg-[#F8C9D5]/50"><LayoutDashboard aria-hidden="true" className="size-4" />Visão geral</a>
           <a href="/admin/books" className="inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-[#633848] hover:bg-[#F8C9D5]/50"><BookOpen aria-hidden="true" className="size-4" />Livros</a>
           <a href="/admin/categories" className="inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-[#633848] hover:bg-[#F8C9D5]/50"><Tags aria-hidden="true" className="size-4" />Categorias</a>
+          <a href="/admin/import" className="inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-[#633848] hover:bg-[#F8C9D5]/50"><Upload aria-hidden="true" className="size-4" />Importar PDFs</a>
         </nav>
         <main className="min-w-0">{message && <p role="alert" className="mb-5 rounded-xl border border-[#E9437A]/30 bg-[#FFF2EB] p-4 text-sm text-[#7D0928]">{message}</p>}{children}</main>
       </div>
