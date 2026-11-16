@@ -14,13 +14,338 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      book_categories: {
+        Row: {
+          book_id: string
+          category_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          book_id: string
+          category_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          book_id?: string
+          category_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_categories_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      book_files: {
+        Row: {
+          book_id: string | null
+          id: string
+          original_name: string | null
+          size_bytes: number | null
+          storage_path: string | null
+        }
+        Insert: {
+          book_id?: string | null
+          id?: string
+          original_name?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+        }
+        Update: {
+          book_id?: string | null
+          id?: string
+          original_name?: string | null
+          size_bytes?: number | null
+          storage_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_files_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: true
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      books: {
+        Row: {
+          allow_download: boolean
+          author: string | null
+          category_id: string | null
+          cover_drive_id: string | null
+          cover_path: string | null
+          cover_url: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          drive_file_id: string
+          featured: boolean | null
+          id: string
+          is_featured: boolean | null
+          published_at: string | null
+          source: string
+          status: string
+          title: string
+          updated_at: string | null
+          views: number
+        }
+        Insert: {
+          allow_download?: boolean
+          author?: string | null
+          category_id?: string | null
+          cover_drive_id?: string | null
+          cover_path?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          drive_file_id: string
+          featured?: boolean | null
+          id?: string
+          is_featured?: boolean | null
+          published_at?: string | null
+          source?: string
+          status?: string
+          title: string
+          updated_at?: string | null
+          views?: number
+        }
+        Update: {
+          allow_download?: boolean
+          author?: string | null
+          category_id?: string | null
+          cover_drive_id?: string | null
+          cover_path?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          drive_file_id?: string
+          featured?: boolean | null
+          id?: string
+          is_featured?: boolean | null
+          published_at?: string | null
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "books_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "books_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          icon_name: string | null
+          id: string
+          image_path: string | null
+          is_active: boolean | null
+          name: string
+          parent_id: string | null
+          slug: string
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          icon_name?: string | null
+          id?: string
+          image_path?: string | null
+          is_active?: boolean | null
+          name: string
+          parent_id?: string | null
+          slug: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          icon_name?: string | null
+          id?: string
+          image_path?: string | null
+          is_active?: boolean | null
+          name?: string
+          parent_id?: string | null
+          slug?: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      favorites: {
+        Row: {
+          book_id: string
+          created_at: string | null
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string | null
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reading_history: {
+        Row: {
+          book_id: string
+          last_page: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          last_page?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          last_page?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_history_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reading_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      category_counts: {
+        Args: never
+        Returns: {
+          category_id: string
+          total: number
+        }[]
+      }
+      increment_views: { Args: { p_book: string }; Returns: undefined }
+      is_library_admin: { Args: never; Returns: boolean }
+      storage_used: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never
