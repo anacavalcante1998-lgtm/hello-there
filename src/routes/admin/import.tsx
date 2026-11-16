@@ -16,7 +16,7 @@ type UploadItem = {
   categoryIds: string[];
   status: UploadStatus;
   progress: number;
-  error?: string;
+  error?: string | undefined;
 };
 
 type CsvMetadata = { filename: string; title?: string; author?: string; category?: string; description?: string };
@@ -40,7 +40,7 @@ function parseCsv(text: string): CsvMetadata[] {
   if (rows.length < 2) return [];
 
   const normalize = (value: string) => value.trim().toLocaleLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[ _-]+/g, "");
-  const header = rows[0].map(normalize);
+  const header = (rows[0] ?? []).map(normalize);
   const column = (...names: string[]) => header.findIndex((name) => names.includes(name));
   const filenameIndex = column("arquivo", "nomearquivo", "filename", "pdf", "nomepdf");
   if (filenameIndex < 0) throw new Error("A planilha precisa ter uma coluna de arquivo, filename ou nome do PDF.");
@@ -134,7 +134,7 @@ function BulkImportPage() {
   }
 
   function uploadWithProgress(path: string, file: File, accessToken: string, onProgress: (progress: number) => void) {
-    const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+    const url = import.meta.env["VITE_SUPABASE_URL"] as string | undefined;
     if (!url) return Promise.reject(new Error("Configure VITE_SUPABASE_URL para enviar arquivos."));
     return new Promise<void>((resolve, reject) => {
       const request = new XMLHttpRequest();

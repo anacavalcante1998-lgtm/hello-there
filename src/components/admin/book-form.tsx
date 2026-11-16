@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { getSupabaseClient } from "../../lib/supabase";
 import type { Book, Category } from "../../lib/library-types";
 
-type BookFormProps = { book?: Book; onSaved: () => void; onCancel: () => void };
+type BookFormProps = { book?: Book | undefined; onSaved: () => void; onCancel: () => void };
 type FormState = { title: string; author: string; description: string; cover_path: string; allow_download: boolean; is_featured: boolean; status: "draft" | "published"; categoryIds: string[] };
 const initial: FormState = { title: "", author: "", description: "", cover_path: "", allow_download: false, is_featured: false, status: "draft", categoryIds: [] };
 
