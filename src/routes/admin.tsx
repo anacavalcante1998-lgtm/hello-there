@@ -1,8 +1,8 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import { AdminShell } from "../components/admin/admin-shell";
+import { LibraryFrame } from "@/components/library-frame";
 
 export const Route = createFileRoute("/admin")({ component: AdminRoute });
 
 function AdminRoute() {
-  return <AdminShell><Outlet /></AdminShell>;
+  return <><LibraryFrame initialHash="#/admin" /><Outlet /></>;
 }
