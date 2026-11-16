@@ -134,7 +134,7 @@ function BulkImportPage() {
   }
 
   function uploadWithProgress(path: string, file: File, accessToken: string, onProgress: (progress: number) => void) {
-    const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+    const url = import.meta.env["VITE_SUPABASE_URL"] as string | undefined;
     if (!url) return Promise.reject(new Error("Configure VITE_SUPABASE_URL para enviar arquivos."));
     return new Promise<void>((resolve, reject) => {
       const request = new XMLHttpRequest();
