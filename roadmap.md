@@ -1,0 +1,4 @@
+- [ ] Replace demonstration data with real account access and name registration.
+- [ ] Restrict administration to the verified designated account.
+- [ ] Use one Google Drive PDF and cover form, including book editing.
+- [ ] Add home-screen installation and verify reader/admin access.

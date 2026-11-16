@@ -28,3 +28,8 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- The imported library document uses the integration-generated browser client injected by LibraryFrame; never reintroduce mock clients or duplicate session storage.
+- Library permissions are validated by the database RPC and enforced with RLS; profiles hold names, never authoritative roles.
+- Book registration and editing share a single Drive-link form to keep PDF and cover updates consistent.
+- Installation is manifest-only, with no offline app-shell service worker, to avoid stale previews.

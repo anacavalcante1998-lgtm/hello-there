@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { LibraryFrame } from "@/components/library-frame";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,11 +16,5 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  return (
-    <iframe
-      src="/biblioteca.html"
-      title="Minha Biblioteca"
-      className="fixed inset-0 h-screen w-screen border-0"
-    />
-  );
+  return <LibraryFrame />;
 }

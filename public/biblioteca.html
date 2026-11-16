@@ -369,68 +369,12 @@ button,.btn,.nav a,.mini,.r-btn{-webkit-tap-highlight-color:transparent;touch-ac
 <div id="app"></div><div id="toasts" aria-live="polite"></div><div id="modal-root"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
-(function(){
-const days=n=>new Date(Date.now()-n*864e5).toISOString();
-const C=[['Autoajuda','book'],['Romance','heart'],['Bem-estar','lotus'],['Educação','cap'],['Arte & Cultura','palette'],['Receitas','chef'],['Infantil','smile'],['Diversos','star']]
- .map((c,i)=>({id:'c'+(i+1),parent_id:null,name:c[0],slug:'c'+(i+1),description:null,icon:c[1],image_path:null,sort_order:i,created_at:days(40)}));
-const B=[
-['Sonhe Grande','Autor Desconhecido',1,'Um guia para transformar grandes sonhos em passos pequenos e possíveis.',3,0,48],
-['Amor em Todas as Fases','Julia Mendonça',2,'Uma história sobre amar em cada etapa da vida.',12,0,25],
-['Vida Equilibrada','Carla Souza',3,'Hábitos simples para equilibrar corpo, mente e rotina.',9,1,20],
-['Receitas Especiais','Ana Paula',6,'Receitas de família para ocasiões especiais.',7,0,15],
-['Pequenos Grandes Leitores','Mariana Alves',7,'Histórias curtas para ler em voz alta com as crianças.',5,0,12],
-['Mente Forte','',1,'Descubra o poder da sua mente e transforme sua vida com pequenas mudanças diárias.',22,1,6],
-['Receitas Rápidas','Ana Paula',6,'Pratos práticos para o dia a dia.',4,0,50],
-['Histórias que Encantam','Mariana Alves',7,'Contos para sonhar acordado.',2,0,36],
-['Cuide de Você','Carla Souza',3,'Pequenos cuidados que fazem diferença.',1,0,30]
-].map((b,i)=>({id:'b'+(i+1),title:b[0],author:b[1]||null,description:b[3],category_id:'c'+b[2],cover_path:null,status:'published',featured:i==5||i==2,allow_download:i%3!=1,views:b[4]*3,created_at:days(b[6]/3+i),updated_at:days(1)}));
-B.push({id:'bdrive',title:'Livro do Drive',author:'Autora Teste',description:'Aberto pelo Drive',category_id:'c1',cover_path:null,cover_url:'https://invalid.local/x.jpg',source:'drive',drive_file_id:'1AbCdEfGhIjKlMnOpQrStUv',status:'published',featured:false,allow_download:false,views:0,created_at:days(0),updated_at:days(0)});
-const DB={categories:C,books:B,
- book_files:B.map((b,i)=>({id:'f'+i,book_id:b.id,storage_path:b.id+'.pdf',original_name:b.title+'.pdf',size_bytes:(3+i*1.3)*1048576|0,created_at:b.created_at})),
- favorites:[],
- reading_history:[['b7',12],['b8',3],['b9',41]].map((h,i)=>({user_id:'demo-admin',book_id:h[0],last_page:h[1],updated_at:days(4+i*2)})),
- profiles:[{id:'demo-admin',email:'demo@exemplo.com',full_name:'Ana Carolina',role:'admin',created_at:days(30)},{id:'u2',email:'leitora@exemplo.com',full_name:'Leitora Exemplo',role:'reader',created_at:days(10)}]};
-function parseJoins(sel){const out=[];const re=/(\w+):(\w+)\(/g;let m;while((m=re.exec(sel))){let i=re.lastIndex,d=1;while(d&&i<sel.length){const c=sel[i++];if(c==='(')d++;else if(c===')')d--;}out.push({alias:m[1],table:m[2],inner:sel.slice(re.lastIndex,i-1)});re.lastIndex=i;}return out;}
-function withJoins(rows,sel){const js=parseJoins(sel);if(!js.length)return rows;return rows.map(r=>{const o={...r};for(const j of js){const t=DB[j.table];let v;if(j.table==='book_files')v=t.filter(x=>x.book_id===r.id);else{const fk=j.alias==='category'?'category_id':j.alias+'_id';v=t.find(x=>x.id===r[fk])||null;if(v)v=withJoins([v],j.inner)[0];}o[j.alias]=v;}return o;});}
-const cond=(r,c,op,v)=>{const x=r[c];if(op==='eq')return String(x)===String(v);if(op==='ilike')return String(x??'').toLowerCase().includes(String(v).replace(/%/g,'').toLowerCase());if(op==='in'){const a=Array.isArray(v)?v:String(v).replace(/^\(|\)$/g,'').split(',');return a.map(String).includes(String(x));}return true;};
-class Q{constructor(t){this.t=t;this.f=[];this.ord=[];this.op='select';this.sel='*';this.opts={};this.rg=null;this.lim=null;this.one=null;}
- select(s,o){this.sel=s||'*';this.opts=o||{};this.ret=true;return this}
- eq(c,v){this.f.push(r=>cond(r,c,'eq',v));return this} in(c,a){this.f.push(r=>cond(r,c,'in',a));return this}
- ilike(c,v){this.f.push(r=>cond(r,c,'ilike',v));return this} match(o){Object.entries(o).forEach(([k,v])=>this.eq(k,v));return this}
- or(s){const parts=s.split(/,(?![^(]*\))/).map(p=>{const m=p.match(/^(\w+)\.(\w+)\.(.*)$/);return r=>cond(r,m[1],m[2],m[3]);});this.f.push(r=>parts.some(p=>p(r)));return this}
- order(c,o){this.ord.push([c,!(o&&o.ascending===false)]);return this} range(a,b){this.rg=[a,b];return this} limit(n){this.lim=n;return this}
- single(){this.one='single';return this} maybeSingle(){this.one='maybe';return this}
- insert(x){this.op='insert';this.rec=x;return this} update(x){this.op='update';this.rec=x;return this} delete(){this.op='delete';return this} upsert(x){this.op='upsert';this.rec=x;return this}
- then(a,b){return Promise.resolve(this.exec()).then(a,b)}
- exec(){const T=DB[this.t]||(DB[this.t]=[]);const rows=()=>T.filter(r=>this.f.every(f=>f(r)));
-  if(this.op==='insert'||this.op==='upsert'){const added=[].concat(this.rec).map(r=>{const o={id:'n'+Math.random().toString(36).slice(2,9),created_at:new Date().toISOString(),views:0,sort_order:0,...r};T.push(o);return o;});return this.fin(added,added.length);}
-  if(this.op==='update'){const rs=rows();rs.forEach(r=>Object.assign(r,this.rec));return this.fin(rs,rs.length);}
-  if(this.op==='delete'){const rs=rows();DB[this.t]=T.filter(r=>!rs.includes(r));return {data:null,error:null};}
-  let rs=rows();const count=rs.length;if(this.opts.head)return{data:null,count,error:null};
-  this.ord.forEach(([c,asc])=>{}); [...this.ord].reverse().forEach(([c,asc])=>{rs=[...rs].sort((a,b)=>{const x=a[c],y=b[c];const r=typeof x==='number'?x-y:String(x??'').localeCompare(String(y??''));return asc?r:-r;});});
-  if(this.rg)rs=rs.slice(this.rg[0],this.rg[1]+1);if(this.lim)rs=rs.slice(0,this.lim);
-  return this.fin(rs,count);}
- fin(rs,count){rs=withJoins(rs,this.sel);if(this.one){const r=rs[0]||null;return r||this.one==='maybe'?{data:r,error:null,count}:{data:null,error:{message:'Registro não encontrado.'}}}return{data:rs,count,error:null};}}
-const session={user:{id:'demo-admin',email:'demo@exemplo.com'},access_token:'demo'};
-const store=()=>({getPublicUrl:()=>({data:{publicUrl:''}}),createSignedUrl:async()=>({data:null,error:{message:'A leitura de PDF não está disponível na prévia. Conecte o Supabase para ler os livros.'}}),upload:async()=>({error:{message:'Envio indisponível na prévia.'}}),remove:async()=>({error:null})});
-const mock={from:t=>new Q(t),
- rpc:async n=>{if(n==='category_counts'){const m={};DB.books.filter(b=>b.status==='published').forEach(b=>m[b.category_id]=(m[b.category_id]||0)+1);return{data:Object.entries(m).map(([k,v])=>({category_id:k,total:v})),error:null}}
-  if(n==='storage_used')return{data:DB.book_files.reduce((s,f)=>s+f.size_bytes,0),error:null};return{data:null,error:null}},
- auth:{getSession:async()=>({data:{session}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}}),signInWithPassword:async()=>({error:null}),signUp:async()=>({data:{session},error:null}),signOut:async()=>({error:null}),resetPasswordForEmail:async()=>({error:null}),updateUser:async()=>({error:null})},
- storage:{from:store}};
-window.supabase={createClient:()=>mock};
-window.APP_CONFIG={SUPABASE_URL:'https://demo.invalid',SUPABASE_ANON_KEY:'demo',LIBRARY_NAME:'Minha Biblioteca',TAGLINE:'Leia. Inspire-se. Sonhe.',STORAGE_LIMIT_GB:1};
-document.addEventListener('DOMContentLoaded',()=>{const d=document.createElement('div');d.textContent='Prévia do visual · dados de exemplo · nada é salvo';d.style.cssText='position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:max(12px,env(safe-area-inset-bottom,0px));z-index:90;background:#990B30;color:#FFF2EB;font:600 11.5px Poppins,sans-serif;padding:8px 14px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.25)';document.body.appendChild(d);});
-})();
-
-</script>
-<script>
 'use strict';
 /* =====================================================================
    MINHA BIBLIOTECA — app público (leitores) + base compartilhada
    ===================================================================== */
-const cfg = window.APP_CONFIG || {};
-const configured = !!cfg.SUPABASE_URL && !!cfg.SUPABASE_ANON_KEY && !/SEU-PROJETO|COLE_AQUI/.test(cfg.SUPABASE_URL + cfg.SUPABASE_ANON_KEY);
+const cfg = { LIBRARY_NAME: 'Minha Biblioteca', TAGLINE: 'Leia. Inspire-se. Sonhe.' };
+const configured = true;
 const LIB = cfg.LIBRARY_NAME || 'Minha Biblioteca';
 let sb = null;
 const state = { session: null, profile: null, cats: [], favs: new Set(), shellKey: null, next: null };
@@ -587,7 +531,14 @@ const emptyBlock = (title, text) => `<div class="empty">${flower()}<b>${esc(titl
 const secHead = (title, link) => `<div class="sec-h">${flower()}<h2>${esc(title)}</h2>${link ? `<a class="all" href="${link}">Ver todas ${ic('arrow', 16)}</a>` : ''}</div>`;
 
 /* ---------- Google Drive ---------- */
-const driveId = s => { const m = String(s || '').match(/\/(?:file|folders)\/(?:u\/\d+\/)?(?:d\/)?([\w-]{15,})|[?&]id=([\w-]{15,})|^([\w-]{25,})$/); return m ? (m[1] || m[2] || m[3]) : null; };
+const driveId = s => {
+  try {
+    const url = new URL(String(s || '').trim());
+    if (url.protocol !== 'https:' || url.hostname !== 'drive.google.com' || url.pathname.includes('/folders/')) return null;
+    const id = url.pathname.match(/^\/file\/d\/([\w-]{15,200})(?:\/|$)/)?.[1] || (['/open','/uc','/thumbnail'].includes(url.pathname) ? url.searchParams.get('id') : null);
+    return id && /^[\w-]{15,200}$/.test(id) ? id : null;
+  } catch { return null; }
+};
 const driveIsFolder = s => /\/folders\//.test(String(s || ''));
 const drivePreview = id => `https://drive.google.com/file/d/${encodeURIComponent(id)}/preview`;
 const driveDownload = id => `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
@@ -649,6 +600,7 @@ const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; $$('.install-btn').forEach(b => b.classList.remove('hidden')); });
 window.addEventListener('appinstalled', () => { deferredInstall = null; $$('.install-btn').forEach(b => b.classList.add('hidden')); toast('App instalado! Procure o ícone na sua tela inicial.'); });
 async function installApp() {
+  if (window.parent !== window) { window.parent.postMessage({type:'library-install'}, location.origin); return; }
   if (deferredInstall) { deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; $$('.install-btn').forEach(b => b.classList.add('hidden')); return; }
   const m = openModal(`<h2>Instalar o app</h2><p style="font-size:14px;line-height:1.6">${isIOS()
     ? 'No iPhone ou iPad, abra este site no <b>Safari</b>, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.'
@@ -658,29 +610,36 @@ async function installApp() {
 /* ---------- inicialização ---------- */
 async function init() {
   if (!configured) { renderSetup(); return; }
-  sb = supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  sb = window.libraryClient;
+  if (!sb) return;
   if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const { data: { user } } = await sb.auth.getUser();
   const { data: { session } } = await sb.auth.getSession();
-  state.session = session;
+  state.session = user ? session : null;
   await Promise.all([loadProfile(), loadCats()]);
   await loadFavs();
-  sb.auth.onAuthStateChange(async (ev, s) => {
-    if (ev === 'TOKEN_REFRESHED') { state.session = s; return; }
-    const changed = (s?.user?.id || null) !== (state.session?.user?.id || null);
-    state.session = s;
-    if (ev === 'PASSWORD_RECOVERY') setTimeout(promptNewPassword, 300);
-    if (changed) { await loadProfile(); await loadFavs(); state.shellKey = null; route(); }
+  sb.auth.onAuthStateChange((ev, session) => {
+    if (!['SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED', 'PASSWORD_RECOVERY'].includes(ev)) return;
+    setTimeout(async () => {
+      if (ev === 'SIGNED_OUT') { state.session = null; state.profile = null; state.favs.clear(); state.cats = []; state.shellKey = null; $('#modal-root').innerHTML = ''; go('#/login'); route(); return; }
+      const { data: { user } } = await sb.auth.getUser();
+      state.session = user ? session : null;
+      await Promise.all([loadProfile(), loadCats()]); await loadFavs(); state.shellKey = null; route();
+      if (ev === 'PASSWORD_RECOVERY') promptNewPassword();
+    }, 0);
   });
   window.addEventListener('hashchange', route);
   document.addEventListener('click', globalClick);
   document.addEventListener('keydown', readerKeys);
   route();
+  if (window.libraryRecovery) promptNewPassword();
 }
 async function loadProfile() {
   state.profile = null;
   if (!state.session) return;
   const { data } = await sb.from('profiles').select('*').eq('id', state.session.user.id).maybeSingle();
-  state.profile = data || { id: state.session.user.id, email: state.session.user.email, role: 'reader', full_name: state.session.user.email };
+  const { data: admin, error } = await sb.rpc('is_library_admin');
+  state.profile = { ...data, id: state.session.user.id, email: state.session.user.email, role: !error && admin ? 'admin' : 'reader', full_name: data?.full_name || state.session.user.email };
 }
 function renderSetup() {
   $('#app').innerHTML = `<div class="auth-form" style="min-height:100vh"><div class="auth-box" style="width:min(640px,100%)">
@@ -710,7 +669,7 @@ function renderShell(kind) {
   state.shellKey = key;
   const admin = kind === 'admin';
   const nav = admin
-    ? navLink('#/admin', 'dash', 'Painel') + navLink('#/admin/livros', 'book', 'Livros') + navLink('#/admin/upload', 'upload', 'Enviar PDFs') + navLink('#/admin/drive', 'link', 'Google Drive') + navLink('#/admin/categorias', 'grid', 'Categorias') + navLink('#/admin/usuarios', 'users', 'Usuários') + '<hr>' + navLink('#/', 'home', 'Ver biblioteca')
+    ? navLink('#/admin', 'dash', 'Painel') + navLink('#/admin/livros', 'book', 'Livros') + navLink('#/admin/drive', 'link', 'Adicionar livro') + navLink('#/admin/categorias', 'grid', 'Categorias') + navLink('#/admin/usuarios', 'users', 'Usuários') + '<hr>' + navLink('#/', 'home', 'Ver biblioteca')
     : navLink('#/', 'home', 'Início') + navLink('#/categorias', 'grid', 'Categorias') + navLink('#/meus-livros', 'book', 'Meus Livros') + navLink('#/favoritos', 'heart', 'Favoritos') + navLink('#/sobre', 'info', 'Sobre') + navLink('#/ajuda', 'help', 'Ajuda') + (isAdmin() ? '<hr>' + navLink('#/admin', 'dash', 'Painel admin') : '');
   const name = esc(LIB);
   const parts = name.split(' ');
@@ -721,7 +680,7 @@ function renderShell(kind) {
       <nav class="nav">${nav}</nav>
       ${admin ? '' : `<a class="promo" href="#/categorias">${ic('heart', 20)}<b>Uma biblioteca feita para você!</b><p>Descubra novos mundos através dos livros.</p>${flower()}</a>`}
       <div class="side-waves">${waves(WAVE_COLORS, 232, 200, 80, 26, 22)}</div>
-      <div class="side-user">${isStandalone() ? '' : `<button class="btn btn-soft btn-sm btn-block install-btn ${deferredInstall || isIOS() ? '' : 'hidden'}" id="install-btn" style="margin-bottom:12px">${ic('download', 16)} Instalar app</button>`}${sideUser()}</div>
+      <div class="side-user">${isStandalone() ? '' : `<button class="btn btn-soft btn-sm btn-block install-btn" id="install-btn" style="margin-bottom:12px">${ic('download', 16)} Baixar app</button>`}${sideUser()}</div>
     </aside>
     <div class="scrim" id="scrim"></div>
     <main class="main">
@@ -798,6 +757,7 @@ async function route() {
   const parts = path.split('/').filter(Boolean);
   const live = () => my === routeToken;
   try {
+    if (!state.session) return viewLogin();
     if (parts[0] === 'login') return viewLogin(params);
     if (parts[0] === 'ler') return viewReader(parts[1], live);
     if (parts[0] === 'admin') {
@@ -1017,8 +977,9 @@ function viewLogin() {
       <div class="field"><label for="a-mail">E-mail</label><input id="a-mail" type="email" required autocomplete="email"></div>
       <div class="field"><label for="a-pass">Senha</label><input id="a-pass" type="password" required minlength="6" autocomplete="current-password"></div>
       <button class="btn btn-dark btn-block" id="a-go">Entrar</button></form>
-    <p style="text-align:center;margin:16px 0 0;font-size:13px"><span class="link" id="a-forgot">Esqueci minha senha</span> · <a class="link" href="#/">Voltar à biblioteca</a></p></div></div></div>`;
-  const setMode = m => { mode = m; $$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.m === m)); $$('.up-only').forEach(e => e.classList.toggle('hidden', m !== 'up')); $('#a-go').textContent = m === 'in' ? 'Entrar' : 'Criar conta'; $('#a-pass').autocomplete = m === 'in' ? 'current-password' : 'new-password'; };
+    <p style="text-align:center;margin:16px 0 0;font-size:13px"><span class="link" id="a-forgot">Esqueci minha senha</span></p><button type="button" class="btn btn-soft btn-block" id="auth-install" style="margin-top:18px">${ic('download',18)} Baixar app</button></div></div></div>`;
+  $('#auth-install').onclick = installApp;
+  const setMode = m => { mode = m; $('#a-name').required = m === 'up'; $('#a-name').maxLength = 100; $$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.m === m)); $$('.up-only').forEach(e => e.classList.toggle('hidden', m !== 'up')); $('#a-go').textContent = m === 'in' ? 'Entrar' : 'Criar conta'; $('#a-pass').autocomplete = m === 'in' ? 'current-password' : 'new-password'; };
   $$('.tabs button').forEach(b => b.onclick = () => setMode(b.dataset.m));
   const showErr = m => { $('#auth-err').innerHTML = m ? `<div class="err">${esc(m)}</div>` : ''; };
   $('#auth-form').onsubmit = async e => {
@@ -1027,7 +988,7 @@ function viewLogin() {
     try {
       if (mode === 'in') { const { error } = await sb.auth.signInWithPassword({ email, password }); if (error) throw error; toast('Bem-vindo(a) de volta!'); }
       else {
-        const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: $('#a-name').value.trim() } } });
+        const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: window.parent.location.origin, data: { full_name: $('#a-name').value.trim() } } });
         if (error) throw error;
         if (!data.session) { showErr(''); $('#auth-err').innerHTML = '<div class="note" style="margin-bottom:12px">Conta criada! Confirme seu e-mail pelo link que enviamos e depois entre.</div>'; setMode('in'); }
         else toast('Conta criada com sucesso!');
@@ -1037,7 +998,7 @@ function viewLogin() {
   };
   $('#a-forgot').onclick = async () => {
     const email = $('#a-mail').value.trim(); if (!email) return showErr('Digite seu e-mail no campo acima primeiro.');
-    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.parent.location.origin + '/reset-password' });
     error ? showErr(errMsg(error)) : toast('Enviamos um link de redefinição para o seu e-mail.');
   };
 }
@@ -1156,7 +1117,7 @@ function readDrive(b, live) {
 
 async function adminRoute(parts, params, live) {
   const page = parts[0] || '';
-  const views = { '': adminDash, livros: adminBooks, upload: adminUpload, drive: adminDrive, categorias: adminCategories, usuarios: adminUsers };
+  const views = { '': adminDash, livros: adminBooks, upload: adminDrive, drive: adminDrive, categorias: adminCategories, usuarios: adminUsers };
   await (views[page] || adminDash)(params, live);
 }
 const aTitle = (t, actions = '') => `<div class="a-title"><h1>${esc(t)}</h1><div class="sp">${actions}</div></div>`;
@@ -1205,284 +1166,17 @@ async function adminDash(_, live) {
   const cnt = (t, f) => { let q = sb.from(t).select('id', { count: 'exact', head: true }); if (f) q = f(q); return q.then(r => r.count || 0); };
   const [books, pub, draft, cats, readers, used, recent] = await Promise.all([
     cnt('books'), cnt('books', q => q.eq('status', 'published')), cnt('books', q => q.eq('status', 'draft')), cnt('categories'),
-    cnt('profiles', q => q.eq('role', 'reader')), sb.rpc('storage_used').then(r => Number(r.data) || 0),
+    cnt('profiles'), sb.rpc('storage_used').then(r => Number(r.data) || 0),
     sb.from('books').select('id,title,author,status,created_at,category:categories(name)').order('created_at', { ascending: false }).limit(8)
   ]);
   if (!live()) return;
   const limit = (cfg.STORAGE_LIMIT_GB || 1) * 1024 ** 3, pct = Math.min(100, used / limit * 100);
   const stat = (n, label, cls, icon) => `<div class="stat s${cls}">${ic(icon)}<b>${n}</b><span>${label}</span></div>`;
-  setView(aTitle('Painel', `<a class="btn btn-pink" href="#/admin/upload">${ic('upload', 18)} Enviar PDFs</a><a class="btn btn-ghost" href="#/admin/drive">${ic('link', 18)} Importar do Drive</a><a class="btn btn-ghost" href="#/admin/categorias">${ic('plus', 18)} Nova categoria</a>`) +
+  setView(aTitle('Painel', `<a class="btn btn-pink" href="#/admin/drive">${ic('plus', 18)} Adicionar livro</a><a class="btn btn-ghost" href="#/admin/categorias">${ic('plus', 18)} Nova categoria</a>`) +
     `<div class="stats">${stat(books, 'Total de livros', 0, 'book')}${stat(cats, 'Categorias', 1, 'grid')}${stat(pub, 'Publicados', 2, 'check')}${stat(draft, 'Em rascunho', 3, 'edit')}${stat(readers, 'Leitores', 4, 'users')}</div>
     <div class="panel"><h2>Armazenamento utilizado</h2><div class="bar"><i style="width:${pct}%"></i></div>
       <p style="margin:8px 0 0;font-size:13px"><b>${fmtBytes(used)}</b> de ${cfg.STORAGE_LIMIT_GB || 1} GB (${pct.toFixed(1)}%) — soma dos PDFs enviados. Capas não entram na conta.</p></div>
     <div class="panel"><h2>Uploads recentes</h2>${recent.data?.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Livro</th><th>Categoria</th><th>Status</th><th>Enviado em</th></tr></thead><tbody>${recent.data.map(b => `<tr><td class="t">${esc(b.title)}<small>${esc(b.author || '')}</small></td><td>${esc(b.category?.name || '—')}</td><td><span class="badge ${b.status === 'published' ? 'b-pub' : 'b-draft'}">${b.status === 'published' ? 'Publicado' : 'Rascunho'}</span></td><td>${fmtDate(b.created_at)}</td></tr>`).join('')}</tbody></table></div>` : emptyBlock('Nenhum livro enviado ainda', 'Comece em “Enviar PDFs”.')}</div>`);
-}
-
-/* =====================================================================
-   UPLOAD EM MASSA
-   ===================================================================== */
-const U = { items: [], running: false, cancelled: false, defaults: { categoryId: '', status: 'published', allow_download: true, featured: false, autoCover: true, createCats: true } };
-const titleFromName = n => n.replace(/\.pdf$/i, '').replace(/[_]+/g, ' ').replace(/\s+/g, ' ').trim();
-const fileKey = n => norm(n).replace(/\.pdf$/, '');
-function newItem(file) {
-  return { id: crypto.randomUUID(), file, title: titleFromName(file.name), author: '', description: '', categoryId: U.defaults.categoryId, featured: U.defaults.featured, status: U.defaults.status, allow_download: U.defaults.allow_download, cover: null, progress: 0, state: 'pending', error: '', storagePath: null, bookId: null, xhr: null };
-}
-const STATE_LABEL = { pending: ['Aguardando', 'b-wait'], uploading: ['Enviando', 'b-up'], done: ['Enviado ✓', 'b-ok'], error: ['Erro', 'b-err'], cancelled: ['Cancelado', 'b-wait'] };
-
-async function adminUpload(_, live) {
-  if (!live()) return;
-  const d = U.defaults;
-  setView(aTitle('Enviar PDFs') + `
-  <div class="drop" id="drop">${flower()}<b>Arraste seus PDFs aqui</b><p>Selecione dezenas ou centenas de arquivos de uma vez. Cada arquivo pode ter até 50 MB (limite do plano gratuito do Supabase).</p>
-    <div class="btns"><button class="btn btn-dark" id="pick">${ic('file', 18)} Escolher arquivos</button><button class="btn btn-ghost" id="pick-dir">${ic('folder', 18)} Escolher pasta</button></div>
-    <input type="file" id="in-files" accept="application/pdf,.pdf" multiple hidden><input type="file" id="in-dir" webkitdirectory multiple hidden></div>
-
-  <div class="panel"><h2>Aplicar a todos os arquivos</h2>
-    <div class="defaults">
-      <div class="field"><label>Categoria</label><select id="d-cat">${catOptions(d.categoryId, 'Escolha uma categoria')}</select></div>
-      <button class="btn btn-pink btn-sm" id="d-apply">Aplicar categoria a todos</button>
-      <div class="field"><label>Status</label><select id="d-status"><option value="published" ${d.status === 'published' ? 'selected' : ''}>Publicar</option><option value="draft" ${d.status === 'draft' ? 'selected' : ''}>Rascunho</option></select></div>
-      <label class="check"><input type="checkbox" id="d-dl" ${d.allow_download ? 'checked' : ''}> Permitir download</label>
-      <label class="check"><input type="checkbox" id="d-feat" ${d.featured ? 'checked' : ''}> Marcar como destaque</label>
-      <label class="check"><input type="checkbox" id="d-cover" ${d.autoCover ? 'checked' : ''}> Gerar capa da 1ª página</label>
-    </div>
-    <p class="note" style="margin-top:12px">Status, download e destaque valem para os arquivos adicionados <b>depois</b> de alterar — e podem ser ajustados individualmente em “⋯ mais”. A categoria pode ser aplicada a todos de uma vez no botão acima.</p></div>
-
-  <div class="panel"><h2>Importar metadados (CSV)</h2>
-    <p style="font-size:13px;margin:0 0 10px;line-height:1.5">Colunas aceitas: <b>arquivo</b> (nome do PDF), <b>titulo</b>, <b>autor</b>, <b>categoria</b>, <b>descricao</b>. Os dados são ligados aos PDFs pelo nome do arquivo. Aceita separador vírgula ou ponto e vírgula.</p>
-    <div class="defaults"><button class="btn btn-ghost btn-sm" id="csv-pick">${ic('csv', 18)} Importar planilha CSV</button><button class="btn btn-ghost btn-sm" id="csv-tpl">${ic('download', 18)} Baixar modelo</button>
-    <label class="check"><input type="checkbox" id="d-newcats" ${d.createCats ? 'checked' : ''}> Criar categorias que ainda não existem</label></div>
-    <input type="file" id="in-csv" accept=".csv,text/csv" hidden></div>
-
-  <div class="panel" id="list-panel"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-    <h2 style="margin:0">Arquivos <span id="sum-count" style="font-size:16px;font-family:var(--sans)"></span></h2>
-    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-pink" id="b-start">${ic('upload', 18)} Iniciar envio</button>
-      <button class="btn btn-ghost btn-sm" id="b-cancel">${ic('pause', 16)} Cancelar envio</button>
-      <button class="btn btn-ghost btn-sm" id="b-retry">${ic('retry', 16)} Tentar falhos de novo</button>
-      <button class="btn btn-ghost btn-sm" id="b-clean">Remover concluídos</button>
-      <button class="btn btn-danger btn-sm" id="b-clear">Limpar lista</button></div></div>
-    <div class="bar"><i id="sum-bar" style="width:0"></i></div><p id="sum-text" style="font-size:12.5px;margin:6px 0 10px"></p>
-    <div class="up-head"><span>Arquivo</span><span>Título</span><span>Autor</span><span>Categoria</span><span>Progresso</span><span></span></div>
-    <div id="rows"></div></div>`);
-
-  const drop = $('#drop');
-  const add = files => {
-    const pdfs = [...files].filter(f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
-    const skipped = files.length - pdfs.length; let dup = 0;
-    pdfs.forEach(f => { if (U.items.some(i => i.file.name === f.name && i.file.size === f.size)) dup++; else U.items.push(newItem(f)); });
-    renderRows(); updateSummary();
-    if (skipped) toast(`${skipped} arquivo(s) ignorado(s): só PDFs são aceitos.`, 'warn');
-    if (dup) toast(`${dup} arquivo(s) repetido(s) ignorado(s).`, 'warn');
-  };
-  $('#pick').onclick = () => $('#in-files').click(); $('#pick-dir').onclick = () => $('#in-dir').click();
-  $('#in-files').onchange = e => { add(e.target.files); e.target.value = ''; };
-  $('#in-dir').onchange = e => { add(e.target.files); e.target.value = ''; };
-  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
-  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
-  drop.addEventListener('drop', async e => add(await filesFromDrop(e.dataTransfer)));
-
-  $('#d-cat').onchange = e => { U.defaults.categoryId = e.target.value; };
-  $('#d-status').onchange = e => { U.defaults.status = e.target.value; };
-  $('#d-dl').onchange = e => { U.defaults.allow_download = e.target.checked; };
-  $('#d-feat').onchange = e => { U.defaults.featured = e.target.checked; };
-  $('#d-cover').onchange = e => { U.defaults.autoCover = e.target.checked; };
-  $('#d-newcats').onchange = e => { U.defaults.createCats = e.target.checked; };
-  $('#d-apply').onclick = () => {
-    const c = $('#d-cat').value; if (!c) return toast('Escolha uma categoria primeiro.', 'warn');
-    const todo = U.items.filter(i => !['done', 'uploading'].includes(i.state)); todo.forEach(i => i.categoryId = c);
-    renderRows(); toast(`Categoria aplicada a ${todo.length} arquivo(s).`);
-  };
-  $('#csv-pick').onclick = () => $('#in-csv').click();
-  $('#in-csv').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importCsv(f); };
-  $('#csv-tpl').onclick = () => { const b = new Blob(['\ufeffarquivo;titulo;autor;categoria;descricao\n'], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'modelo-metadados.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
-
-  $('#b-start').onclick = startUpload;
-  $('#b-cancel').onclick = cancelAll;
-  $('#b-retry').onclick = () => { U.items.forEach(i => { if (['error', 'cancelled'].includes(i.state)) { i.state = 'pending'; i.error = ''; i.progress = 0; } }); renderRows(); startUpload(); };
-  $('#b-clean').onclick = () => { U.items = U.items.filter(i => i.state !== 'done'); renderRows(); updateSummary(); };
-  $('#b-clear').onclick = async () => { if (U.running) return toast('Cancele o envio antes de limpar a lista.', 'warn'); if (!U.items.length || await confirmBox('Remover todos os arquivos da lista? (Livros já enviados não são afetados.)', { ok: 'Limpar' })) { U.items = []; renderRows(); updateSummary(); } };
-
-  const rows = $('#rows');
-  rows.addEventListener('input', e => { const it = itemOf(e.target); if (it && e.target.dataset.f && e.target.type !== 'checkbox' && e.target.type !== 'file') it[e.target.dataset.f] = e.target.value; });
-  rows.addEventListener('change', e => {
-    const it = itemOf(e.target); if (!it || !e.target.dataset.f) return;
-    const f = e.target.dataset.f;
-    it[f] = e.target.type === 'checkbox' ? e.target.checked : e.target.type === 'file' ? (e.target.files[0] || null) : e.target.value;
-    if (f === 'cover' && it.cover && it.cover.size > 5 * 1024 * 1024) { toast('A capa deve ter até 5 MB.', 'warn'); it.cover = null; e.target.value = ''; }
-  });
-  rows.addEventListener('click', e => {
-    const b = e.target.closest('[data-act]'); if (!b) return; const it = itemOf(b); if (!it) return;
-    const a = b.dataset.act;
-    if (a === 'more') b.closest('.uprow').querySelector('.up-more').classList.toggle('hidden');
-    if (a === 'remove') { if (it.state === 'uploading') return; U.items = U.items.filter(x => x !== it); b.closest('.uprow').remove(); updateSummary(); }
-    if (a === 'retry') { it.state = 'pending'; it.error = ''; it.progress = 0; updateRow(it); startUpload(); }
-    if (a === 'stop') { it.xhr && it.xhr.abort(); }
-  });
-  renderRows(); updateSummary();
-}
-const itemOf = el => { const r = el.closest('.uprow'); return r && U.items.find(i => i.id === r.dataset.id); };
-
-async function filesFromDrop(dt) {
-  const out = [];
-  const walk = async entry => {
-    if (entry.isFile) await new Promise(r => entry.file(f => { out.push(f); r(); }, r));
-    else if (entry.isDirectory) {
-      const rd = entry.createReader(); let batch;
-      do { batch = await new Promise(r => rd.readEntries(r, () => r([]))); for (const en of batch) await walk(en); } while (batch.length);
-    }
-  };
-  const entries = [...(dt.items || [])].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
-  if (entries.length) { for (const e of entries) await walk(e); return out; }
-  return [...dt.files];
-}
-
-function rowHTML(it) {
-  const [lab, cls] = STATE_LABEL[it.state];
-  const locked = ['uploading', 'done'].includes(it.state) ? 'disabled' : '';
-  return `<div class="uprow" data-id="${it.id}">
-    <div class="up-file"><b title="${esc(it.file.name)}">${esc(it.file.name)}</b><small>${fmtBytes(it.file.size)}</small></div>
-    <input class="in" data-f="title" value="${esc(it.title)}" placeholder="Título" ${locked}>
-    <input class="in" data-f="author" value="${esc(it.author)}" placeholder="Autor" ${locked}>
-    <select class="in" data-f="categoryId" ${locked}>${catOptions(it.categoryId, 'Sem categoria')}</select>
-    <div class="up-state"><div class="bar"><i style="width:${it.progress}%"></i></div><span class="badge ${cls}">${lab}${it.state === 'uploading' ? ' ' + it.progress + '%' : ''}</span><small>${esc(it.error)}</small></div>
-    <div class="up-actions"><button class="mini" data-act="more" title="Mais opções" aria-label="Mais opções">${ic('edit', 16)}</button>
-      <button class="mini ${it.state === 'error' || it.state === 'cancelled' ? '' : 'hidden'}" data-act="retry" title="Tentar de novo" aria-label="Tentar de novo">${ic('retry', 16)}</button>
-      <button class="mini ${it.state === 'uploading' ? '' : 'hidden'}" data-act="stop" title="Cancelar" aria-label="Cancelar">${ic('pause', 16)}</button>
-      <button class="mini ${it.state === 'uploading' ? 'hidden' : ''}" data-act="remove" title="Remover" aria-label="Remover">${ic('x', 16)}</button></div>
-    <div class="up-more hidden"><textarea class="in" data-f="description" placeholder="Descrição (opcional)" ${locked}>${esc(it.description)}</textarea>
-      <label>Capa personalizada<input type="file" data-f="cover" accept="image/jpeg,image/png,image/webp" ${locked}></label>
-      <label>Status<select class="in" data-f="status" ${locked}><option value="published" ${it.status === 'published' ? 'selected' : ''}>Publicado</option><option value="draft" ${it.status === 'draft' ? 'selected' : ''}>Rascunho</option></select></label>
-      <label class="check"><input type="checkbox" data-f="featured" ${it.featured ? 'checked' : ''} ${locked}> Destaque</label>
-      <label class="check"><input type="checkbox" data-f="allow_download" ${it.allow_download ? 'checked' : ''} ${locked}> Permitir download</label></div></div>`;
-}
-function renderRows() {
-  const r = $('#rows'); if (!r) return;
-  r.innerHTML = U.items.length ? U.items.map(rowHTML).join('') : `<div class="empty" style="margin-top:10px">${flower()}<b>Nenhum arquivo selecionado</b>Arraste PDFs para a área acima ou use “Escolher arquivos”.</div>`;
-}
-function updateRow(it) {
-  const row = $(`.uprow[data-id="${it.id}"]`); if (!row) return;
-  const [lab, cls] = STATE_LABEL[it.state];
-  $('.bar i', row).style.width = it.progress + '%';
-  const b = $('.badge', row); b.className = 'badge ' + cls; b.textContent = lab + (it.state === 'uploading' ? ' ' + it.progress + '%' : '');
-  $('.up-state small', row).textContent = it.error || '';
-  const show = (a, v) => $(`[data-act="${a}"]`, row).classList.toggle('hidden', !v);
-  show('retry', ['error', 'cancelled'].includes(it.state)); show('stop', it.state === 'uploading'); show('remove', it.state !== 'uploading');
-  const lock = ['uploading', 'done'].includes(it.state);
-  $$('input,select,textarea', row).forEach(x => x.disabled = lock);
-}
-function updateSummary() {
-  const n = U.items.length, c = s => U.items.filter(i => i.state === s).length;
-  const done = c('done'), err = c('error'), up = c('uploading'), wait = c('pending') + c('cancelled');
-  const pct = n ? Math.round(U.items.reduce((s, i) => s + (i.state === 'done' ? 100 : i.progress), 0) / n) : 0;
-  const set = (id, fn) => { const e = $(id); if (e) fn(e); };
-  set('#sum-count', e => e.textContent = n ? `(${n})` : '');
-  set('#sum-bar', e => e.style.width = pct + '%');
-  set('#sum-text', e => e.textContent = n ? `Progresso geral: ${pct}% — ${done} enviado(s), ${up} em andamento, ${wait} aguardando, ${err} com erro.` : 'Nenhum arquivo na lista.');
-  set('#b-start', e => e.disabled = U.running);
-}
-
-async function startUpload() {
-  if (U.running) return;
-  const queue = U.items.filter(i => i.state === 'pending');
-  if (!queue.length) return toast('Não há arquivos aguardando envio.', 'warn');
-  const bad = queue.filter(i => !i.title.trim());
-  if (bad.length) { toast(`${bad.length} arquivo(s) estão sem título.`, 'err'); return; }
-  U.running = true; U.cancelled = false; updateSummary();
-  let idx = 0;
-  const worker = async () => { while (!U.cancelled) { const it = queue[idx++]; if (!it) break; await uploadItem(it); } };
-  await Promise.all(Array.from({ length: Math.min(3, queue.length) }, worker));
-  U.running = false; updateSummary();
-  const ok = queue.filter(i => i.state === 'done').length, bd = queue.filter(i => i.state === 'error').length;
-  if (U.cancelled) toast('Envio cancelado. Os arquivos restantes continuam na lista.', 'warn');
-  else if (bd) toast(`${ok} enviado(s), ${bd} com erro. Use “Tentar falhos de novo”.`, 'err');
-  else toast(`${ok} livro(s) enviado(s) com sucesso!`);
-}
-function cancelAll() {
-  if (!U.running) return toast('Nenhum envio em andamento.', 'warn');
-  U.cancelled = true; U.items.forEach(i => i.xhr && i.state === 'uploading' && i.xhr.abort());
-}
-async function uploadItem(it) {
-  it.state = 'uploading'; it.error = ''; it.progress = it.storagePath ? 95 : 0; it.xhr = null; updateRow(it); updateSummary();
-  try {
-    if (!it.storagePath) {
-      const path = `${it.id}.pdf`;
-      await xhrUpload('books', path, it.file, 'application/pdf', p => { it.progress = Math.round(p * 94); updateRow(it); updateSummary(); }, x => it.xhr = x);
-      it.storagePath = path;
-    }
-    it.progress = 96; updateRow(it);
-    let coverPath = it.coverPath || null;
-    if (!coverPath) {
-      let blob = it.cover, ext = it.cover ? extOf(it.cover) : 'jpg';
-      if (!blob && U.defaults.autoCover) { try { blob = await coverFromPdf(it.file); } catch (e) { blob = null; } }
-      if (blob) {
-        coverPath = `books/${it.id}.${ext}`;
-        const { error } = await sb.storage.from('covers').upload(coverPath, blob, { upsert: true, contentType: blob.type || 'image/jpeg' });
-        if (error) { if (it.cover) throw error; coverPath = null; }
-        it.coverPath = coverPath;
-      }
-    }
-    if (!it.bookId) {
-      const { data, error } = await sb.from('books').insert({ title: it.title.trim(), author: it.author.trim() || null, description: it.description.trim() || null, category_id: it.categoryId || null, cover_path: coverPath, status: it.status, featured: it.featured, allow_download: it.allow_download }).select('id').single();
-      if (error) throw error; it.bookId = data.id;
-    }
-    const { error: fe } = await sb.from('book_files').insert({ book_id: it.bookId, storage_path: it.storagePath, original_name: it.file.name, size_bytes: it.file.size, mime_type: 'application/pdf' });
-    if (fe && fe.code !== '23505') throw fe;
-    it.state = 'done'; it.progress = 100;
-  } catch (e) {
-    if (e.cancelled) { it.state = 'cancelled'; it.progress = 0; it.error = ''; }
-    else { it.state = 'error'; it.error = errMsg(e); }
-  }
-  it.xhr = null; updateRow(it); updateSummary();
-}
-
-/* ---------- CSV ---------- */
-function parseCSV(text) {
-  text = text.replace(/^\ufeff/, '');
-  const first = text.split(/\r?\n/)[0] || '', delim = (first.match(/;/g) || []).length >= (first.match(/,/g) || []).length ? ';' : ',';
-  const rows = []; let row = [], cur = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
-    else if (ch === '"') q = true;
-    else if (ch === delim) { row.push(cur); cur = ''; }
-    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some(c => c.trim())) rows.push(row); row = []; }
-    else cur += ch;
-  }
-  row.push(cur); if (row.some(c => c.trim())) rows.push(row);
-  return rows;
-}
-async function importCsv(file) {
-  if (!U.items.length) return toast('Adicione os PDFs primeiro; depois importe a planilha.', 'warn');
-  const rows = parseCSV(await file.text());
-  if (rows.length < 2) return toast('A planilha está vazia.', 'warn');
-  const alias = { arquivo: 'file', 'nome do arquivo': 'file', 'arquivo pdf': 'file', pdf: 'file', filename: 'file', file: 'file', titulo: 'title', title: 'title', autor: 'author', author: 'author', categoria: 'cat', category: 'cat', descricao: 'desc', description: 'desc' };
-  const head = rows[0].map(h => alias[norm(h)] || null);
-  if (!head.includes('file')) return toast('A planilha precisa da coluna "arquivo" com o nome do PDF.', 'err');
-  const byKey = new Map(U.items.map(i => [fileKey(i.file.name), i]));
-  let matched = 0, missCat = new Set(), unmatched = [];
-  const pending = [];
-  for (const r of rows.slice(1)) {
-    const rec = {}; head.forEach((k, i) => { if (k) rec[k] = (r[i] || '').trim(); });
-    const it = byKey.get(fileKey(rec.file || ''));
-    if (!it) { unmatched.push(rec.file); continue; }
-    if (['done', 'uploading'].includes(it.state)) continue;
-    matched++;
-    if (rec.title) it.title = rec.title; if (rec.author) it.author = rec.author; if (rec.desc) it.description = rec.desc;
-    if (rec.cat) pending.push([it, rec.cat]);
-  }
-  const create = $('#d-newcats')?.checked;
-  for (const [it, name] of pending) {
-    let c = state.cats.find(x => norm(x.name) === norm(name));
-    if (!c && create) {
-      const { data, error } = await sb.from('categories').insert({ name, slug: slugify(name) + '-' + Math.random().toString(36).slice(2, 6), sort_order: state.cats.length }).select().single();
-      if (!error) { c = data; state.cats.push(c); }
-    }
-    if (c) it.categoryId = c.id; else missCat.add(name);
-  }
-  renderRows(); updateSummary();
-  const d = $('#d-cat'); if (d) d.innerHTML = catOptions(U.defaults.categoryId, 'Escolha uma categoria');
-  toast(`CSV aplicado a ${matched} arquivo(s).` + (unmatched.length ? ` ${unmatched.length} linha(s) sem PDF correspondente.` : '') + (missCat.size ? ` Categorias não encontradas: ${[...missCat].slice(0, 3).join(', ')}.` : ''), unmatched.length || missCat.size ? 'warn' : 'ok');
 }
 
 /* =====================================================================
@@ -1491,7 +1185,7 @@ async function importCsv(file) {
 const AB = { q: '', cat: '', status: '', page: 1, sel: new Set(), size: 25 };
 async function adminBooks(_, live) {
   if (!live()) return;
-  setView(aTitle('Livros', `<a class="btn btn-pink" href="#/admin/upload">${ic('upload', 18)} Enviar PDFs</a>`) + `
+  setView(aTitle('Livros', `<a class="btn btn-pink" href="#/admin/drive">${ic('upload', 18)} Adicionar livro</a>`) + `
     <div class="filters"><div class="search" style="max-width:340px;height:42px;padding:0 14px"><input id="ab-q" placeholder="Pesquisar título ou autor..." value="${esc(AB.q)}">${ic('search', 18)}</div>
     <select id="ab-cat">${catOptions(AB.cat, 'Todas as categorias')}</select>
     <select id="ab-st"><option value="">Todos os status</option><option value="published" ${AB.status === 'published' ? 'selected' : ''}>Publicados</option><option value="draft" ${AB.status === 'draft' ? 'selected' : ''}>Rascunhos</option></select>
@@ -1563,48 +1257,9 @@ async function bookAction(a, id) {
   } catch (e) { toast(errMsg(e), 'err'); }
 }
 function editBook(b) {
-  let newCover = null, newPdf = null, removeCover = false;
-  const m = openModal(`<h2>Editar livro</h2>
-    <div class="field"><label>Título</label><input id="e-title" value="${esc(b.title)}"></div>
-    <div class="row2"><div class="field"><label>Autor</label><input id="e-author" value="${esc(b.author || '')}"></div>
-    <div class="field"><label>Categoria</label><select id="e-cat">${catOptions(b.category_id, 'Sem categoria')}</select></div></div>
-    <div class="field"><label>Descrição</label><textarea id="e-desc" rows="4">${esc(b.description || '')}</textarea></div>
-    <div class="row2"><div class="field"><label>Status</label><select id="e-status"><option value="published" ${b.status === 'published' ? 'selected' : ''}>Publicado</option><option value="draft" ${b.status === 'draft' ? 'selected' : ''}>Rascunho</option></select></div>
-    <div style="display:flex;flex-direction:column;gap:10px;justify-content:center"><label class="check"><input type="checkbox" id="e-feat" ${b.featured ? 'checked' : ''}> Livro em destaque</label><label class="check"><input type="checkbox" id="e-dl" ${b.allow_download ? 'checked' : ''}> Permitir download</label></div></div>
-    <div class="row2"><div class="field"><label>Capa (JPG/PNG/WebP, até 5 MB)</label><input type="file" id="e-cover" accept="image/jpeg,image/png,image/webp">${b.cover_path ? `<label class="check" style="margin-top:6px"><input type="checkbox" id="e-rmcover"> Remover capa atual</label>` : ''}</div>
-    ${b.source === 'drive' ? `<div class="field"><label>Link do Google Drive</label><input id="e-drive" value="${esc(driveView(b.drive_file_id))}"></div>` : `<div class="field"><label>Substituir arquivo PDF</label><input type="file" id="e-pdf" accept="application/pdf"></div>`}</div>
-    <div class="bar hidden" id="e-bar"><i style="width:0"></i></div>
-    <div class="foot"><button class="btn btn-ghost" data-close>Cancelar</button><button class="btn btn-pink" id="e-save">Salvar alterações</button></div>`, { wide: true });
-  const g = id => $(id, m.el);
-  g('#e-cover').onchange = e => { newCover = e.target.files[0] || null; if (newCover && newCover.size > 5 * 1024 * 1024) { toast('Capa maior que 5 MB.', 'warn'); newCover = null; e.target.value = ''; } };
-  if (g('#e-pdf')) g('#e-pdf').onchange = e => { newPdf = e.target.files[0] || null; };
-  const rm = g('#e-rmcover'); if (rm) rm.onchange = () => removeCover = rm.checked;
-  g('#e-save').onclick = async () => {
-    const title = g('#e-title').value.trim(); if (!title) return toast('O título é obrigatório.', 'warn');
-    const btn = g('#e-save'); btn.disabled = true; btn.textContent = 'Salvando...';
-    try {
-      const upd = { title, author: g('#e-author').value.trim() || null, description: g('#e-desc').value.trim() || null, category_id: g('#e-cat').value || null, status: g('#e-status').value, featured: g('#e-feat').checked, allow_download: g('#e-dl').checked, updated_at: new Date().toISOString() };
-      let oldCover = null;
-      if (b.source === 'drive') { const id = driveId(g('#e-drive').value); if (!id || driveIsFolder(g('#e-drive').value)) throw new Error('Link do Drive inválido.'); if (id !== b.drive_file_id) { upd.drive_file_id = id; if (!b.cover_path && !newCover) upd.cover_url = driveThumb(id); } }
-      if (newCover) { const p = `books/${b.id}-${Date.now()}.${extOf(newCover)}`; const { error } = await sb.storage.from('covers').upload(p, newCover, { contentType: newCover.type }); if (error) throw error; oldCover = b.cover_path; upd.cover_path = p; }
-      else if (removeCover) { oldCover = b.cover_path; upd.cover_path = null; }
-      if (newPdf) {
-        const bar = g('#e-bar'); bar.classList.remove('hidden');
-        const { data: old } = await sb.from('book_files').select('storage_path').eq('book_id', b.id).maybeSingle();
-        const path = `${b.id}-${Date.now()}.pdf`;
-        await xhrUpload('books', path, newPdf, 'application/pdf', p => $('i', bar).style.width = Math.round(p * 100) + '%');
-        const fileRow = { book_id: b.id, storage_path: path, original_name: newPdf.name, size_bytes: newPdf.size, mime_type: 'application/pdf' };
-        const { error } = old ? await sb.from('book_files').update(fileRow).eq('book_id', b.id) : await sb.from('book_files').insert(fileRow);
-        if (error) { await sb.storage.from('books').remove([path]); throw error; }
-        if (old?.storage_path) await sb.storage.from('books').remove([old.storage_path]);
-      }
-      const { error } = await sb.from('books').update(upd).eq('id', b.id); if (error) throw error;
-      if (oldCover) await sb.storage.from('covers').remove([oldCover]);
-      toast('Livro atualizado.'); m.close(); loadAdminBooks();
-    } catch (e) { toast(errMsg(e), 'err'); btn.disabled = false; btn.textContent = 'Salvar alterações'; }
-  };
+  const m = openModal(`<h2>Editar livro</h2><div id="edit-form"></div>`, { wide: true });
+  renderDriveForm($('#edit-form', m.el), b, () => { m.close(); loadAdminBooks(); });
 }
-
 /* =====================================================================
    CATEGORIAS
    ===================================================================== */
@@ -1678,254 +1333,42 @@ async function adminUsers(_, live) {
   const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending: false });
   if (!live()) return;
   if (error) return setView(`<div class="err">${esc(errMsg(error))}</div>`);
-  const me = state.session.user.id;
-  setView(aTitle('Usuários e permissões') + `<p class="note" style="margin-bottom:14px"><b>Administrador:</b> gerencia livros, categorias, uploads e usuários. <b>Leitor:</b> navega, lê e baixa (quando permitido). Novas contas começam como leitor.</p>
-    <div class="panel" style="margin-top:0"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nome</th><th>E-mail</th><th>Cadastro</th><th>Perfil</th></tr></thead><tbody>${data.map(u => `<tr data-id="${u.id}"><td class="t">${esc(u.full_name || '—')}</td><td>${esc(u.email || '')}</td><td>${fmtDate(u.created_at)}</td>
-    <td><select class="in" style="height:36px;width:150px" data-role ${u.id === me ? 'disabled title="Você não pode alterar o próprio perfil"' : ''}><option value="reader" ${u.role === 'reader' ? 'selected' : ''}>Leitor</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Administrador</option></select></td></tr>`).join('')}</tbody></table></div></div>`);
-  $$('[data-role]').forEach(s => s.onchange = async () => {
-    const id = s.closest('tr').dataset.id, role = s.value;
-    if (role === 'admin' && !await confirmBox('Dar acesso total de administrador a este usuário?', { ok: 'Confirmar' })) { s.value = 'reader'; return; }
-    const { error } = await sb.from('profiles').update({ role }).eq('id', id);
-    error ? (toast(errMsg(error), 'err'), adminUsers(null, live)) : toast('Perfil atualizado.');
-  });
+  setView(aTitle('Usuários') + `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Nome</th><th>Cadastro</th></tr></thead><tbody>${data.map(u => `<tr><td>${esc(u.full_name)}</td><td>${fmtDate(u.created_at)}</td></tr>`).join('')}</tbody></table></div>`);
 }
-
-/* =====================================================================
-   IMPORTAR DO GOOGLE DRIVE
-   O PDF continua no Drive; o app guarda só o link e abre a prévia do Drive dentro do leitor.
-   ===================================================================== */
-const D = { items: [], saving: false, defaults: { categoryId: '', status: 'published', allow_download: true, featured: false, createCats: true } };
-const D_STATE = { pending: ['Aguardando', 'b-wait'], saving: ['Salvando', 'b-up'], done: ['Salvo ✓', 'b-ok'], error: ['Erro', 'b-err'] };
-const GKEY = () => (cfg.GOOGLE_API_KEY || '').trim();
-
-function dNewItem(o) {
-  return { id: crypto.randomUUID(), driveId: o.driveId, title: o.title || '', author: o.author || '', description: o.description || '', catName: o.catName || '', categoryId: o.categoryId ?? D.defaults.categoryId, state: 'pending', error: '', access: '' };
-}
-function dAdd(list) {
-  let dup = 0, bad = 0;
-  for (const o of list) {
-    if (!o.driveId) { bad++; continue; }
-    if (D.items.some(i => i.driveId === o.driveId)) { dup++; continue; }
-    D.items.push(dNewItem(o));
-  }
-  dRender(); dSummary();
-  if (bad) toast(`${bad} linha(s) sem link válido do Drive foram ignoradas.`, 'warn');
-  if (dup) toast(`${dup} link(s) repetido(s) ignorado(s).`, 'warn');
-  return list.length - bad - dup;
-}
-function dParseText(text) {
-  return text.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(line => {
-    const c = line.split(/\t|;|\|/).map(x => x.trim());
-    return { driveId: driveIsFolder(c[0]) ? null : driveId(c[0]), title: c[1] || '', author: c[2] || '', catName: c[3] || '', description: c[4] || '' };
-  });
-}
-
-async function gFetch(url) {
-  const r = await fetch(url);
-  if (!r.ok) { let m = 'Falha ao consultar o Google (' + r.status + ').'; try { const j = await r.json(); m = j.error?.message || m; } catch (e) { } throw new Error(m); }
-  return r.json();
-}
-async function dFillNames(items) {
-  if (!GKEY()) return;
-  const todo = items.filter(i => !i.title); let k = 0;
-  await Promise.all(Array.from({ length: 6 }, async () => {
-    while (k < todo.length) {
-      const it = todo[k++];
-      try { const j = await gFetch(`https://www.googleapis.com/drive/v3/files/${it.driveId}?fields=name&supportsAllDrives=true&key=${encodeURIComponent(GKEY())}`); it.title = titleFromName(j.name || ''); }
-      catch (e) { it.error = 'Não foi possível ler o nome: ' + errMsg(e); }
-    }
-  }));
-  dRender();
-}
-async function dListFolder(folderId, { sub, catName = '', depth = 0, out = [], onCount }) {
-  let token = '';
-  do {
-    const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
-    const j = await gFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&pageSize=1000&fields=nextPageToken,files(id,name,mimeType)&supportsAllDrives=true&includeItemsFromAllDrives=true&key=${encodeURIComponent(GKEY())}${token ? '&pageToken=' + token : ''}`);
-    for (const f of j.files || []) {
-      if (f.mimeType === 'application/pdf') { out.push({ driveId: f.id, title: titleFromName(f.name), catName }); onCount && onCount(out.length); }
-      else if (f.mimeType === 'application/vnd.google-apps.folder' && sub && depth < 4) await dListFolder(f.id, { sub, catName: depth === 0 ? f.name : catName || f.name, depth: depth + 1, out, onCount });
-    }
-    token = j.nextPageToken || '';
-  } while (token);
-  return out;
-}
-
-/* categorias por nome (cria se permitido) */
-async function dResolveCats(items, create) {
-  const missing = new Set();
-  for (const it of items) {
-    if (!it.catName) continue;
-    let c = state.cats.find(x => norm(x.name) === norm(it.catName));
-    if (!c && create) {
-      const { data, error } = await sb.from('categories').insert({ name: it.catName, slug: slugify(it.catName) + '-' + Math.random().toString(36).slice(2, 6), sort_order: state.cats.length }).select().single();
-      if (!error) { c = data; state.cats.push(c); }
-    }
-    if (c) it.categoryId = c.id; else missing.add(it.catName);
-  }
-  return missing;
-}
-
 async function adminDrive(_, live) {
-  if (!live()) return;
-  const d = D.defaults, hasKey = !!GKEY();
-  setView(aTitle('Importar do Google Drive') + `
-  <div class="panel drive-box" style="margin-top:0"><h2>Colar links</h2>
-    <p style="font-size:13px;line-height:1.55;margin:0 0 10px">Cole um link por linha. Para já informar os dados, separe com <b>tab</b> (copiado de uma planilha) ou <b>;</b> nesta ordem: <b>link ; título ; autor ; categoria ; descrição</b>. Só o link é obrigatório${hasKey ? ' (o título é lido do Drive)' : ', mas sem a chave do Google você precisa informar o título'}.</p>
-    <textarea id="dr-text" placeholder="https://drive.google.com/file/d/1AbC.../view?usp=sharing;Nome do livro;Autor;Romance"></textarea>
-    <div class="defaults" style="margin-top:10px"><button class="btn btn-pink" id="dr-add">${ic('plus', 18)} Adicionar à lista</button><button class="btn btn-ghost btn-sm" id="dr-csv">${ic('csv', 18)} Importar CSV</button><input type="file" id="dr-csv-in" accept=".csv,text/csv" hidden></div>
-    <p class="note" style="margin-top:12px">Cada arquivo precisa estar compartilhado como <b>“Qualquer pessoa com o link”</b> (Compartilhar → Acesso geral). Caso contrário, os leitores não conseguem abrir. Use “Verificar acesso” antes de salvar.</p></div>
-
-  <div class="panel drive-box"><h2>Importar uma pasta inteira</h2>
-    ${hasKey ? `<div class="defaults"><div class="field" style="flex:1;min-width:240px"><label>Link da pasta</label><input id="dr-folder" placeholder="https://drive.google.com/drive/folders/..."></div>
-      <label class="check"><input type="checkbox" id="dr-sub" checked> Incluir subpastas</label>
-      <button class="btn btn-pink btn-sm" id="dr-list">${ic('folder', 18)} Listar PDFs da pasta</button></div>
-      <p style="font-size:12.5px;margin:8px 0 0">Com subpastas, o nome da subpasta vira a categoria do livro (criada se ainda não existir).</p><p id="dr-folder-msg" style="font-size:13px;margin:6px 0 0"></p>`
-      : `<p class="note">Para listar pastas, o Google exige uma chave de API gratuita. Siga o passo “Chave do Google” do README e coloque a chave em <code>GOOGLE_API_KEY</code> no <code>config.js</code>. Enquanto isso, cole os links dos arquivos acima.</p>`}</div>
-
-  <div class="panel"><h2>Aplicar a todos</h2><div class="defaults">
-    <div class="field"><label>Categoria</label><select id="dd-cat">${catOptions(d.categoryId, 'Escolha uma categoria')}</select></div>
-    <button class="btn btn-pink btn-sm" id="dd-apply">Aplicar categoria a todos</button>
-    <div class="field"><label>Status</label><select id="dd-status"><option value="published" ${d.status === 'published' ? 'selected' : ''}>Publicar</option><option value="draft" ${d.status === 'draft' ? 'selected' : ''}>Rascunho</option></select></div>
-    <label class="check"><input type="checkbox" id="dd-dl" ${d.allow_download ? 'checked' : ''}> Permitir download</label>
-    <label class="check"><input type="checkbox" id="dd-feat" ${d.featured ? 'checked' : ''}> Destaque</label>
-    <label class="check"><input type="checkbox" id="dd-newcats" ${d.createCats ? 'checked' : ''}> Criar categorias novas</label></div></div>
-
-  <div class="panel"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-    <h2 style="margin:0">Livros <span id="d-count" style="font-size:16px;font-family:var(--sans)"></span></h2>
-    <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-pink" id="d-save">${ic('check', 18)} Salvar na biblioteca</button>
-      <button class="btn btn-ghost btn-sm" id="d-check">${ic('shield', 16)} Verificar acesso</button>
-      <button class="btn btn-ghost btn-sm" id="d-retry">${ic('retry', 16)} Tentar falhos de novo</button>
-      <button class="btn btn-ghost btn-sm" id="d-clean">Remover salvos</button>
-      <button class="btn btn-danger btn-sm" id="d-clear">Limpar lista</button></div></div>
-    <div class="bar"><i id="d-bar" style="width:0"></i></div><p id="d-text" style="font-size:12.5px;margin:6px 0 10px"></p>
-    <div class="up-head"><span>Link</span><span>Título</span><span>Autor</span><span>Categoria</span><span>Situação</span><span></span></div>
-    <div id="d-rows"></div></div>`);
-
-  const $d = id => $(id);
-  $d('#dd-cat').onchange = e => d.categoryId = e.target.value;
-  $d('#dd-status').onchange = e => d.status = e.target.value;
-  $d('#dd-dl').onchange = e => d.allow_download = e.target.checked;
-  $d('#dd-feat').onchange = e => d.featured = e.target.checked;
-  $d('#dd-newcats').onchange = e => d.createCats = e.target.checked;
-  $d('#dd-apply').onclick = () => { const c = $d('#dd-cat').value; if (!c) return toast('Escolha uma categoria primeiro.', 'warn'); const t = D.items.filter(i => i.state !== 'done'); t.forEach(i => i.categoryId = c); dRender(); toast(`Categoria aplicada a ${t.length} livro(s).`); };
-
-  $d('#dr-add').onclick = async () => {
-    const list = dParseText($d('#dr-text').value);
-    if (!list.length) return toast('Cole ao menos um link.', 'warn');
-    if (list.some(o => !o.driveId)) toast('Há linhas que não parecem links de arquivo do Drive. Links de pasta devem ir em “Importar uma pasta”.', 'warn');
-    const before = D.items.length;
-    const miss = await dResolveCats(list.filter(o => o.catName), d.createCats);
-    const n = dAdd(list);
-    if (n) { $d('#dr-text').value = ''; toast(`${n} link(s) adicionado(s).`); await dFillNames(D.items.slice(before)); }
-    if (miss.size) toast(`Categorias não encontradas: ${[...miss].slice(0, 3).join(', ')}.`, 'warn');
-  };
-  $d('#dr-csv').onclick = () => $d('#dr-csv-in').click();
-  $d('#dr-csv-in').onchange = async e => {
-    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-    const rows = parseCSV(await f.text()); if (rows.length < 2) return toast('A planilha está vazia.', 'warn');
-    const alias = { link: 'link', url: 'link', drive: 'link', 'link do drive': 'link', arquivo: 'link', titulo: 'title', title: 'title', autor: 'author', author: 'author', categoria: 'cat', category: 'cat', descricao: 'desc', description: 'desc' };
-    const head = rows[0].map(h => alias[norm(h)] || null);
-    if (!head.includes('link')) return toast('A planilha precisa de uma coluna "link".', 'err');
-    const list = rows.slice(1).map(r => { const o = {}; head.forEach((k, i) => { if (k) o[k] = (r[i] || '').trim(); }); return { driveId: driveId(o.link), title: o.title, author: o.author, catName: o.cat, description: o.desc }; });
-    const before = D.items.length; const miss = await dResolveCats(list.filter(o => o.catName && o.driveId), d.createCats);
-    const n = dAdd(list); toast(`${n} livro(s) importado(s) da planilha.`); await dFillNames(D.items.slice(before));
-    if (miss.size) toast(`Categorias não encontradas: ${[...miss].slice(0, 3).join(', ')}.`, 'warn');
-  };
-  const lb = $d('#dr-list');
-  if (lb) lb.onclick = async () => {
-    const id = driveId($d('#dr-folder').value); const msg = $d('#dr-folder-msg');
-    if (!id || !driveIsFolder($d('#dr-folder').value)) return toast('Cole o link de uma pasta do Drive.', 'warn');
-    lb.disabled = true; msg.textContent = 'Listando...';
+  await loadCats(); if (!live()) return;
+  setView(aTitle('Adicionar livro') + '<div id="drive-form"></div>');
+  renderDriveForm($('#drive-form'), null, () => { toast('Livro salvo na biblioteca.'); go('#/admin/livros'); });
+}
+function renderDriveForm(el, book, saved) {
+  el.innerHTML = `<form id="link-book-form">
+    <div class="field"><label for="e-title">Título</label><input id="e-title" required maxlength="300" value="${esc(book?.title || '')}"></div>
+    <div class="row2"><div class="field"><label for="e-author">Autor</label><input id="e-author" maxlength="300" value="${esc(book?.author || '')}"></div><div class="field"><label for="e-cat">Categoria</label><select id="e-cat">${catOptions(book?.category_id)}</select></div></div>
+    <div class="field"><label for="e-drive">Link do PDF no Google Drive</label><input id="e-drive" type="url" required value="${esc(book?.drive_file_id ? driveView(book.drive_file_id) : '')}"></div>
+    <div class="field"><label for="e-cover">Link da capa no Google Drive (opcional)</label><input id="e-cover" type="url" value="${esc(book?.cover_drive_id ? driveView(book.cover_drive_id) : '')}"></div>
+    <div class="field"><label for="e-desc">Descrição</label><textarea id="e-desc" rows="3" maxlength="10000">${esc(book?.description || '')}</textarea></div>
+    <div class="field"><label for="e-status">Status</label><select id="e-status"><option value="draft" ${book?.status !== 'published' ? 'selected' : ''}>Rascunho</option><option value="published" ${book?.status === 'published' ? 'selected' : ''}>Publicado</option></select></div>
+    <label class="check"><input type="checkbox" id="e-feat" ${book?.featured ? 'checked' : ''}> Livro em destaque</label>
+    <label class="check"><input type="checkbox" id="e-dl" ${book?.allow_download ? 'checked' : ''}> Permitir download</label>
+    <p class="note" style="margin:16px 0">O PDF e a capa precisam estar compartilhados no Drive como “Qualquer pessoa com o link”.</p>
+    <div id="link-error" role="alert"></div><div class="foot"><button type="submit" class="btn btn-pink" id="e-save">${book ? 'Salvar alterações' : 'Salvar livro'}</button></div></form>`;
+  const g = s => $(s, el);
+  g('#link-book-form').onsubmit = async event => {
+    event.preventDefault(); const btn = g('#e-save'); btn.disabled = true; g('#link-error').textContent = '';
     try {
-      const list = await dListFolder(id, { sub: $d('#dr-sub').checked, onCount: n => { msg.textContent = `Listando... ${n} PDF(s) encontrados`; } });
-      if (!list.length) msg.textContent = 'Nenhum PDF encontrado. Verifique se a pasta está compartilhada como “Qualquer pessoa com o link”.';
-      else { await dResolveCats(list.filter(o => o.catName), d.createCats); const n = dAdd(list); msg.textContent = `${list.length} PDF(s) encontrados, ${n} novo(s) adicionado(s) à lista.`; }
-    } catch (e) { msg.textContent = ''; toast(errMsg(e), 'err'); }
-    lb.disabled = false;
+      const {data: admin, error: authError} = await sb.rpc('is_library_admin'); if (authError || !admin) throw new Error('Acesso restrito à administradora.');
+      const id = driveId(g('#e-drive').value), cover = g('#e-cover').value.trim(), coverId = cover ? driveId(cover) : null;
+      if (!id) throw new Error('Cole um link de arquivo PDF válido do Google Drive.');
+      if (cover && !coverId) throw new Error('Cole um link de arquivo de capa válido do Google Drive.');
+      const title = g('#e-title').value.trim(); if (!title) throw new Error('O título é obrigatório.');
+      const rec = { title, author: g('#e-author').value.trim() || null, description: g('#e-desc').value.trim() || null, category_id: g('#e-cat').value || null, drive_file_id: id, cover_drive_id: coverId, cover_url: driveThumb(coverId || id), cover_path: null, source: 'drive', status: g('#e-status').value, featured: g('#e-feat').checked, allow_download: g('#e-dl').checked, updated_at: new Date().toISOString() };
+      const {error} = book ? await sb.from('books').update(rec).eq('id',book.id).select('id').single() : await sb.from('books').insert(rec).select('id').single();
+      if (error) throw new Error(error.code === '23505' ? 'Este PDF já está cadastrado. Edite o livro existente.' : error.message);
+      saved();
+    } catch(error) { g('#link-error').textContent = errMsg(error); } finally { btn.disabled = false; }
   };
-
-  $d('#d-save').onclick = dSave;
-  $d('#d-check').onclick = dCheckAccess;
-  $d('#d-retry').onclick = () => { D.items.forEach(i => { if (i.state === 'error') { i.state = 'pending'; i.error = ''; } }); dRender(); dSave(); };
-  $d('#d-clean').onclick = () => { D.items = D.items.filter(i => i.state !== 'done'); dRender(); dSummary(); };
-  $d('#d-clear').onclick = async () => { if (D.saving) return; if (!D.items.length || await confirmBox('Remover todos os links da lista? (Livros já salvos não são afetados.)', { ok: 'Limpar' })) { D.items = []; dRender(); dSummary(); } };
-
-  const rows = $d('#d-rows');
-  const itOf = el => { const r = el.closest('.uprow'); return r && D.items.find(i => i.id === r.dataset.id); };
-  rows.addEventListener('input', e => { const it = itOf(e.target); if (it && e.target.dataset.f) it[e.target.dataset.f] = e.target.value; });
-  rows.addEventListener('change', e => { const it = itOf(e.target); if (it && e.target.dataset.f) it[e.target.dataset.f] = e.target.value; });
-  rows.addEventListener('click', e => {
-    const b = e.target.closest('[data-act]'); if (!b) return; const it = itOf(b); if (!it) return;
-    if (b.dataset.act === 'remove') { D.items = D.items.filter(x => x !== it); b.closest('.uprow').remove(); dSummary(); }
-    if (b.dataset.act === 'retry') { it.state = 'pending'; it.error = ''; dRowUpdate(it); dSave(); }
-  });
-  dRender(); dSummary();
 }
-function dRowHTML(it) {
-  const [lab, cls] = D_STATE[it.state];
-  const lock = ['saving', 'done'].includes(it.state) ? 'disabled' : '';
-  const acc = it.access === 'ok' ? '<span class="badge b-ok">Acessível</span> ' : it.access === 'no' ? '<span class="badge b-warn">Sem acesso público?</span> ' : it.access === 'chk' ? '<span class="badge b-wait">Verificando</span> ' : '';
-  return `<div class="uprow" data-id="${it.id}">
-    <div class="up-file"><b><a href="${esc(driveView(it.driveId))}" target="_blank" rel="noopener" title="Abrir no Drive">${esc(it.driveId.slice(0, 14))}…</a></b><small>Google Drive</small></div>
-    <input class="in" data-f="title" value="${esc(it.title)}" placeholder="Título (obrigatório)" ${lock}>
-    <input class="in" data-f="author" value="${esc(it.author)}" placeholder="Autor" ${lock}>
-    <select class="in" data-f="categoryId" ${lock}>${catOptions(it.categoryId, 'Sem categoria')}</select>
-    <div class="up-state">${acc}<span class="badge ${cls}">${lab}</span><small>${esc(it.error)}</small></div>
-    <div class="up-actions"><button class="mini ${it.state === 'error' ? '' : 'hidden'}" data-act="retry" aria-label="Tentar de novo" title="Tentar de novo">${ic('retry', 16)}</button><button class="mini ${it.state === 'saving' ? 'hidden' : ''}" data-act="remove" aria-label="Remover" title="Remover">${ic('x', 16)}</button></div></div>`;
-}
-function dRender() {
-  const r = $('#d-rows'); if (!r) return;
-  r.innerHTML = D.items.length ? D.items.map(dRowHTML).join('') : `<div class="empty" style="margin-top:10px">${flower()}<b>Nenhum link na lista</b>Cole links do Drive acima ou liste uma pasta.</div>`;
-}
-function dRowUpdate(it) { const row = $(`#d-rows .uprow[data-id="${it.id}"]`); if (row) row.outerHTML = dRowHTML(it); dSummary(); }
-function dSummary() {
-  const n = D.items.length, c = s => D.items.filter(i => i.state === s).length;
-  const set = (id, fn) => { const e = $(id); if (e) fn(e); };
-  set('#d-count', e => e.textContent = n ? `(${n})` : '');
-  set('#d-bar', e => e.style.width = (n ? Math.round(c('done') / n * 100) : 0) + '%');
-  set('#d-text', e => e.textContent = n ? `${c('done')} salvo(s), ${c('pending')} aguardando, ${c('error')} com erro.` : 'Nenhum link na lista.');
-  set('#d-save', e => e.disabled = D.saving);
-}
-function dCheckAccess() {
-  const todo = D.items.filter(i => i.state !== 'done'); if (!todo.length) return toast('Nada para verificar.', 'warn');
-  todo.forEach(i => i.access = 'chk'); dRender();
-  let k = 0;
-  const probe = it => new Promise(res => { const im = new Image(); const t = setTimeout(() => { im.src = ''; res(false); }, 12000); im.onload = () => { clearTimeout(t); res(im.naturalWidth > 1); }; im.onerror = () => { clearTimeout(t); res(false); }; im.referrerPolicy = 'no-referrer'; im.src = driveThumb(it.driveId); });
-  Promise.all(Array.from({ length: 6 }, async () => { while (k < todo.length) { const it = todo[k++]; it.access = (await probe(it)) ? 'ok' : 'no'; dRowUpdate(it); } })).then(() => {
-    const bad = todo.filter(i => i.access === 'no').length;
-    toast(bad ? `${bad} arquivo(s) parecem não estar públicos. Ajuste o compartilhamento no Drive.` : 'Todos os arquivos estão acessíveis.', bad ? 'warn' : 'ok');
-  });
-}
-async function dSave() {
-  if (D.saving) return;
-  const queue = D.items.filter(i => i.state === 'pending');
-  if (!queue.length) return toast('Não há livros aguardando.', 'warn');
-  const noTitle = queue.filter(i => !i.title.trim());
-  if (noTitle.length) { toast(`${noTitle.length} livro(s) sem título. Preencha os títulos${GKEY() ? '' : ' (sem a chave do Google o nome do arquivo não pode ser lido)'}.`, 'err'); return; }
-  D.saving = true; dSummary();
-  try {
-    const ids = queue.map(i => i.driveId), existing = new Set();
-    for (let k = 0; k < ids.length; k += 100) { const { data } = await sb.from('books').select('drive_file_id').in('drive_file_id', ids.slice(k, k + 100)); (data || []).forEach(r => existing.add(r.drive_file_id)); }
-    const fresh = [];
-    queue.forEach(it => { if (existing.has(it.driveId)) { it.state = 'error'; it.error = 'Este arquivo já está cadastrado.'; } else fresh.push(it); });
-    const d = D.defaults;
-    const rec = it => ({ title: it.title.trim(), author: it.author.trim() || null, description: it.description.trim() || null, category_id: it.categoryId || null, status: d.status, featured: d.featured, allow_download: d.allow_download, source: 'drive', drive_file_id: it.driveId, cover_url: driveThumb(it.driveId) });
-    for (let k = 0; k < fresh.length; k += 50) {
-      const chunk = fresh.slice(k, k + 50); chunk.forEach(i => i.state = 'saving');
-      const { error } = await sb.from('books').insert(chunk.map(rec));
-      if (!error) chunk.forEach(i => { i.state = 'done'; i.error = ''; });
-      else for (const it of chunk) { const r = await sb.from('books').insert(rec(it)); if (r.error) { it.state = 'error'; it.error = errMsg(r.error); } else it.state = 'done'; }
-      dRender(); dSummary();
-    }
-  } catch (e) { queue.forEach(i => { if (i.state === 'saving' || i.state === 'pending') { i.state = 'error'; i.error = errMsg(e); } }); }
-  D.saving = false; dRender(); dSummary();
-  const ok = queue.filter(i => i.state === 'done').length, bad = queue.filter(i => i.state === 'error').length;
-  toast(bad ? `${ok} salvo(s), ${bad} com erro.` : `${ok} livro(s) salvo(s) na biblioteca!`, bad ? 'err' : 'ok');
-}
-
 </script>
-<script>init();</script>
+<script>if (window.parent === window) document.getElementById("app").innerHTML = '<div class="auth-form"><h1>Abra Minha Biblioteca pela página principal.</h1></div>';</script>
 
 </body></html>

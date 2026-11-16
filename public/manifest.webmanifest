@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "Minha Biblioteca",
+  "short_name": "Biblioteca",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "lang": "pt-BR",
+  "theme_color": "#990B30",
+  "background_color": "#F8C9D5",
+  "icons": [
+    { "src": "/library-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/library-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
